@@ -9,6 +9,7 @@ from src.webui.components.browser_settings_tab import create_browser_settings_ta
 from src.webui.components.browser_use_agent_tab import create_browser_use_agent_tab
 from src.webui.components.deep_research_agent_tab import create_deep_research_agent_tab
 from src.webui.components.skills_tab import create_skills_tab
+from src.webui.components.region_config import get_provinces, get_cities, get_region_skills, get_region_name, get_provinces_with_keys, get_cities_with_keys
 
 theme_map = {
     "Default": gr.themes.Default(),
@@ -86,11 +87,21 @@ def render_brand_html():
 def create_ui(theme_name="Ocean"):
     css = """
     .gradio-container {
-        width: 70vw !important; 
-        max-width: 70% !important; 
+        width: 95vw !important; 
+        max-width: 95% !important; 
         margin-left: auto !important;
         margin-right: auto !important;
         padding-top: 10px !important;
+    }
+    #run_button {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    #run_button button {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        opacity: 1 !important;
     }
     .header-text {
         text-align: center;
@@ -993,7 +1004,8 @@ def create_ui(theme_name="Ocean"):
                             if (statusEl) statusEl.textContent = filled ? "AI已填/已填" + (isRequired ? " · 必填" : "") : (isRequired ? "待补充 · 必填" : "可选");
                         }
                         const btn = getRunButton();
-                        if (btn) btn.disabled = !valid2;
+                        const hasRequiredFields2 = fields.some(f => !!f?.required);
+                        if (btn) btn.disabled = hasRequiredFields2 && !valid2;
                     });
                     inp.addEventListener("change", () => {
                         const curFilter = String(host.dataset.filterStatus || "all");
@@ -1005,7 +1017,8 @@ def create_ui(theme_name="Ocean"):
                 writeValue(ctxEl, JSON.stringify(contextPairs, null, 0));
                 writeValue(validEl, allValid ? "1" : "0");
                 const btn = getRunButton();
-                if (btn) btn.disabled = !allValid;
+                const hasRequiredFields = fields.some(f => !!f?.required);
+                if (btn) btn.disabled = hasRequiredFields && !allValid;
                 return true;
             } catch (e) { return false; }
         }
@@ -1022,15 +1035,13 @@ def create_ui(theme_name="Ocean"):
                     const parsed = safeJsonParse(specEl?.value || "{}") || {};
                     const hasFields = Array.isArray(parsed.required_fields) && parsed.required_fields.length > 0;
                     if (!hasFields) {
-                        const first = loadSkills().map(normalizeSkill)[0];
-                        if (first) {
-                            writeValue(specEl, JSON.stringify({
-                                id: first.id,
-                                name: first.name,
-                                required_fields: first.required_fields || []
-                            }));
-                            if (!(safeJsonParse(extEl?.value || "{}"))) writeValue(extEl, "{}");
-                        }
+                        // 初始化时不自动加载带有必填字段的技能，避免按钮被禁用
+                        writeValue(specEl, JSON.stringify({
+                            id: "",
+                            name: "未选择技能",
+                            required_fields: []
+                        }));
+                        if (!(safeJsonParse(extEl?.value || "{}"))) writeValue(extEl, "{}");
                     }
                     renderDynamicForm();
                 } catch (e) {}
@@ -1428,6 +1439,94 @@ def create_ui(theme_name="Ocean"):
     ) as demo:
         with gr.Row():
             brand_html = gr.HTML(render_brand_html())
+
+        with gr.Row():
+            with gr.Column(scale=12):
+                region_container = gr.HTML()
+
+            with gr.Column(scale=3):
+                province_dropdown = gr.Dropdown(
+                    choices=get_provinces(),
+                    value="江苏省",
+                    label="选择省份",
+                    interactive=True
+                )
+                city_dropdown = gr.Dropdown(
+                    choices=get_cities("江苏省"),
+                    value="南通市",
+                    label="选择城市",
+                    interactive=True
+                )
+
+        def update_cities(province_name):
+            cities = get_cities(province_name)
+            if cities:
+                return gr.update(choices=cities, value=cities[0])
+            return gr.update(choices=[], value=None)
+
+        def update_region_display(province_key, city_key):
+            region_name = get_region_name(province_key, city_key)
+            return f"""
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 8px 16px; background: rgba(46, 214, 255, 0.1); border-radius: 12px; border: 1px solid rgba(46, 214, 255, 0.25);">
+                <span style="font-size: 1.1rem;">📍</span>
+                <span style="font-size: 0.95rem; font-weight: 500;">当前地区：{region_name}</span>
+            </div>
+            """
+
+        def handle_region_change(province_key, city_key):
+            skills = get_region_skills(province_key, city_key)
+            skills_json = str(skills).replace("'", "\"").replace('"', '\\"')
+            return f"""
+            <script>
+                const REGION_SKILLS = {skills};
+                localStorage.setItem('lobster.skills.v1', JSON.stringify(REGION_SKILLS));
+                window.dispatchEvent(new CustomEvent('lobster:skills-updated'));
+            </script>
+            """
+
+        province_dropdown.change(
+            fn=update_cities,
+            inputs=province_dropdown,
+            outputs=city_dropdown
+        )
+
+        region_js = gr.HTML()
+
+        def sync_region_skills(province_key, city_key):
+            skills = get_region_skills(province_key, city_key)
+            region_name = get_region_name(province_key, city_key)
+            
+            display_html = f"""
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 8px 16px; background: rgba(46, 214, 255, 0.1); border-radius: 12px; border: 1px solid rgba(46, 214, 255, 0.25);">
+                <span style="font-size: 1.1rem;">📍</span>
+                <span style="font-size: 0.95rem; font-weight: 500;">当前地区：{region_name}</span>
+            </div>
+            """
+            
+            js_code = f"""
+            <script>
+                const REGION_SKILLS = {skills};
+                localStorage.setItem('lobster.skills.v1', JSON.stringify(REGION_SKILLS));
+                try {{
+                    window.dispatchEvent(new CustomEvent('lobster:skills-updated'));
+                }} catch(e) {{}}
+            </script>
+            """
+            
+            return display_html, js_code
+
+        gr.on(
+            triggers=[province_dropdown.change, city_dropdown.change],
+            fn=sync_region_skills,
+            inputs=[province_dropdown, city_dropdown],
+            outputs=[region_container, region_js]
+        )
+
+        demo.load(
+            fn=sync_region_skills,
+            inputs=[province_dropdown, city_dropdown],
+            outputs=[region_container, region_js]
+        )
 
         with gr.Tabs() as tabs:
             with gr.TabItem("📚 业务指令集"):

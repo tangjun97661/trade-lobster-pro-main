@@ -26,7 +26,11 @@ class WebuiManager:
 
         self.settings_save_dir = settings_save_dir
         os.makedirs(self.settings_save_dir, exist_ok=True)
-        self._persist_path = "/app/config/last_usage_settings.json"
+        # 使用项目目录存储配置文件
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        config_dir = os.path.join(project_root, "config")
+        os.makedirs(config_dir, exist_ok=True)
+        self._persist_path = os.path.join(config_dir, "last_usage_settings.json")
 
     def init_browser_use_agent(self) -> None:
         """

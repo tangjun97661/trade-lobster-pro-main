@@ -219,7 +219,7 @@ def get_llm_model(provider: str, **kwargs):
         )
     elif provider == "deepseek":
         if not kwargs.get("base_url", ""):
-            base_url = os.getenv("DEEPSEEK_ENDPOINT", "")
+            base_url = os.getenv("DEEPSEEK_ENDPOINT", "https://api.deepseek.com/v1")
         else:
             base_url = kwargs.get("base_url")
 

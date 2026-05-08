@@ -18,10 +18,10 @@ if %errorlevel% neq 0 (
 echo [信息] Python 环境检测成功
 echo [信息] 检查依赖安装状态...
 
-pip list | findstr /i "gradio" >nul 2>&1
+pip list | findstr /i "browser-use" >nul 2>&1
 if %errorlevel% neq 0 (
     echo [信息] 开始安装依赖包...
-    pip install -r requirements.txt
+    pip install -r requirements.txt --user
     if %errorlevel% neq 0 (
         echo [错误] 依赖安装失败
         pause
