@@ -1,0 +1,5 @@
+{
+  "agent_settings.llm_provider": "deepseek",
+  "agent_settings.llm_model_name": "deepseek-chat",
+  "agent_settings.llm_temperature": 0.1
+}
