@@ -68,7 +68,8 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ./config:/app/config
-      - C:/Users/del/Desktop:/app/downloads
+      - ./downloads:/app/downloads
+      - ./.env:/app/.env
       # - ./my_chrome_data:/app/data/chrome_data # Optional: persist browser data
     restart: unless-stopped
     shm_size: "2gb"
