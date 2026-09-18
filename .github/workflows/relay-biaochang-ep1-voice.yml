@@ -33,8 +33,7 @@ jobs:
           curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/080f8e5cb3ae424989242b0efe5205e6/id=068bccb4-6d21-4343-aa75-ff0cd0d4d109.wav" -o /tmp/12.wav
           curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=94e4f16c-3035-4000-8fd2-984f8beba1d4.wav" -o /tmp/13.wav
           for n in $(seq -w 1 13); do
-            ffmpeg -hide_banner -loglevel error -y -i "/tmp/$n.wav" -c:a libopus -b:a 24k -ac 1 "/tmp/$n.ogg"
-            base64 -w 0 "/tmp/$n.ogg" > "tmp/biaochang-ep1/voice-b64/$n.ogg.b64"
+            base64 -w 0 "/tmp/$n.wav" > "tmp/biaochang-ep1/voice-b64/$n.wav.b64"
           done
           printf '%s\n' "Generated from HeyGen speech URLs for temporary episode assembly." > tmp/biaochang-ep1/voice-b64/README.txt
       - name: Commit encoded clips
