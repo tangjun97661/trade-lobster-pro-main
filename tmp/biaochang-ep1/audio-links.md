@@ -1,0 +1,15 @@
+# Temporary voice assets
+
+1. [voice01](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/acebd7b6419a44a388b9d1620614b29f/id=7ba1bcd6-05e2-4590-a3db-96154bcaa276.wav)
+2. [voice02](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=0dbeebc2-e0e5-4a50-95c9-06c205d7948d.wav)
+3. [voice03](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/acebd7b6419a44a388b9d1620614b29f/id=d3ee3884-eaef-4ae7-a8c2-b425055ed6fb.wav)
+4. [voice04](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=03ef5e1d-0ac5-4b12-b3fc-738cb3500fe3.wav)
+5. [voice05](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/735c507fdc844be3b1528dd33f7dfb2a/id=5933fe6a-8faf-4c50-8b95-90738d8868e5.wav)
+6. [voice06](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/735c507fdc844be3b1528dd33f7dfb2a/id=fe7fb8bc-57e3-4ca7-93ba-dcceb600f435.wav)
+7. [voice07](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=afb4c70b-6dff-4041-8e38-ede74b0daa54.wav)
+8. [voice08](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/080f8e5cb3ae424989242b0efe5205e6/id=5d0b42ca-d04b-46c4-ac50-94b53330265b.wav)
+9. [voice09](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/acebd7b6419a44a388b9d1620614b29f/id=8dec4234-80a5-475a-b323-2c9d4df0f540.wav)
+10. [voice10](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=a7917ece-6ddb-4391-ac66-d17bc944bf32.wav)
+11. [voice11](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/735c507fdc844be3b1528dd33f7dfb2a/id=3b292207-60d9-4a91-81d5-39f019907765.wav)
+12. [voice12](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/080f8e5cb3ae424989242b0efe5205e6/id=068bccb4-6d21-4343-aa75-ff0cd0d4d109.wav)
+13. [voice13](https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=94e4f16c-3035-4000-8fd2-984f8beba1d4.wav)
