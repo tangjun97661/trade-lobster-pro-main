@@ -1,4 +1,4 @@
-name: Build Xu Zhengheng Voice Assets
+name: Build Wu Xiaohua Voice Assets
 on:
   push:
     branches:
@@ -17,24 +17,24 @@ jobs:
           python -m pip install edge-tts
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-      - name: Generate
+      - name: Generate voice assets
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p out
-          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-8% --pitch=-4Hz --text "我是许正衡。先把事实弄清楚，再谈怎么处理。" --write-media out/a.mp3
-          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-8% --pitch=-4Hz --text "这个问题不能含糊。涉及评审纪律，就按程序来。" --write-media out/b.mp3
-          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-8% --pitch=-4Hz --text "先看事实，再看规则。程序该怎么走，就怎么走。" --write-media out/c.mp3
-          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-8% --pitch=-4Hz --text "我是许正衡。先把事实弄清楚，再谈怎么处理。这个问题不能含糊。涉及评审纪律，就按程序来。先看事实，再看规则。程序该怎么走，就怎么走。工作可以讲效率，但边界必须清楚。遇到拿不准的事，不猜，不绕，按程序核实。" --write-media out/d.mp3
-          ffmpeg -y -hide_banner -loglevel error -i out/a.mp3 -af "highpass=f=70,lowpass=f=14500,loudnorm=I=-18:LRA=7:TP=-2" -ar 48000 -ac 1 out/sample_intro.wav
-          ffmpeg -y -hide_banner -loglevel error -i out/b.mp3 -af "highpass=f=70,lowpass=f=14500,loudnorm=I=-18:LRA=7:TP=-2" -ar 48000 -ac 1 out/sample_warning.wav
-          ffmpeg -y -hide_banner -loglevel error -i out/c.mp3 -af "highpass=f=70,lowpass=f=14500,loudnorm=I=-18:LRA=7:TP=-2" -ar 48000 -ac 1 out/sample_reasoning.wav
-          ffmpeg -y -hide_banner -loglevel error -i out/d.mp3 -af "highpass=f=70,lowpass=f=14500,loudnorm=I=-18:LRA=7:TP=-2" -ar 48000 -ac 1 out/voice_reference.wav
+          python -m edge_tts --voice zh-CN-XiaoxiaoNeural --rate=-2% --pitch=-1Hz --text "大家好，我是吴晓华。交易现场请按规定有序进行，有问题我来协调。" --write-media out/a.mp3
+          python -m edge_tts --voice zh-CN-XiaoxiaoNeural --rate=-2% --pitch=-1Hz --text "请大家配合现场管理。需要核验的事项，先登记，再按程序处理。" --write-media out/b.mp3
+          python -m edge_tts --voice zh-CN-XiaoxiaoNeural --rate=-2% --pitch=-1Hz --text "现场秩序不是为了增加麻烦，而是为了让每个人都在同一套规则下办事。" --write-media out/c.mp3
+          python -m edge_tts --voice zh-CN-XiaoxiaoNeural --rate=-2% --pitch=-1Hz --text "大家好，我是吴晓华。交易现场请按规定有序进行，有问题我来协调。请大家配合现场管理。需要核验的事项，先登记，再按程序处理。现场秩序不是为了增加麻烦，而是为了让每个人都在同一套规则下办事。能当场解决的当场解决，不能当场解决的及时报告。" --write-media out/d.mp3
+          for spec in "a sample_intro" "b sample_warning" "c sample_reasoning" "d voice_reference"; do
+            set -- $spec
+            ffmpeg -y -hide_banner -loglevel error -i out/$1.mp3 -af "highpass=f=75,lowpass=f=15000,loudnorm=I=-18:LRA=7:TP=-2" -ar 48000 -ac 1 -c:a pcm_s16le out/$2.wav
+          done
           rm out/*.mp3
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: CAST-XZH-001-voice-v0.1
+          name: CAST-JYZX-002-WXH-voice-v0.1
           path: out/*.wav
           retention-days: 1
-# xzh voice build 1
+# wxh voice build
