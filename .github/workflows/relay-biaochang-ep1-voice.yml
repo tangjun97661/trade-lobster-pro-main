@@ -49,3 +49,5 @@ jobs:
           fi
           git commit -m "Relay episode 1 voice clips [skip ci]"
           git push origin HEAD:chatgpt-temp-biaochang-ep1-voice
+
+# retrigger 2
