@@ -1,0 +1,42 @@
+name: Build Xuzhengheng Voice Assets
+on:
+  push:
+    branches:
+      - chatgpt-temp-biaochang-ep1-voice
+    paths:
+      - ".github/workflows/build-xuzhengheng-voice.yml"
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install TTS and audio tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install edge-tts
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Generate fixed voice samples
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-8% --pitch=-4Hz --text "我是许正衡。先把事实弄清楚，再谈怎么处理。" --write-media out/sample_intro.mp3
+          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-8% --pitch=-4Hz --text "这个问题不能含糊。涉及评审纪律，就按程序来。" --write-media out/sample_warning.mp3
+          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-8% --pitch=-4Hz --text "先看事实，再看规则。程序该怎么走，就怎么走。" --write-media out/sample_reasoning.mp3
+          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-8% --pitch=-4Hz --text "我是许正衡。先把事实弄清楚，再谈怎么处理。这个问题不能含糊。涉及评审纪律，就按程序来。先看事实，再看规则。程序该怎么走，就怎么走。工作可以讲效率，但边界必须清楚。遇到拿不准的事，不猜，不绕，按程序核实。" --write-media out/reference_raw.mp3
+          for f in sample_intro sample_warning sample_reasoning; do
+            ffmpeg -y -hide_banner -loglevel error -i out/$f.mp3 -af "highpass=f=70,lowpass=f=14500,loudnorm=I=-18:LRA=7:TP=-2" -ar 48000 -ac 1 -c:a pcm_s16le out/$f.wav
+          done
+          ffmpeg -y -hide_banner -loglevel error -i out/reference_raw.mp3 -af "highpass=f=70,lowpass=f=14500,loudnorm=I=-18:LRA=7:TP=-2" -ar 48000 -ac 1 -c:a pcm_s16le out/voice_reference.wav
+          rm out/*.mp3
+      - name: Upload voice assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: CAST-XZH-001-voice-v0.1
+          path: out/*.wav
+          retention-days: 1
+
+# build 1
