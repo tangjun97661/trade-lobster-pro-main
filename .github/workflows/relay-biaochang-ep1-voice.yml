@@ -1,0 +1,56 @@
+name: Relay Biaochang EP1 Voice
+on:
+  push:
+    branches:
+      - chatgpt-temp-biaochang-ep1-voice
+    paths:
+      - ".github/workflows/relay-biaochang-ep1-voice.yml"
+permissions:
+  contents: write
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt-temp-biaochang-ep1-voice
+      - name: Download and encode voice clips
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/biaochang-ep1/voice-b64
+          urls=(
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/acebd7b6419a44a388b9d1620614b29f/id=7ba1bcd6-05e2-4590-a3db-96154bcaa276.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=0dbeebc2-e0e5-4a50-95c9-06c205d7948d.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/acebd7b6419a44a388b9d1620614b29f/id=d3ee3884-eaef-4ae7-a8c2-b425055ed6fb.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=03ef5e1d-0ac5-4b12-b3fc-738cb3500fe3.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/735c507fdc844be3b1528dd33f7dfb2a/id=5933fe6a-8faf-4c50-8b95-90738d8868e5.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/735c507fdc844be3b1528dd33f7dfb2a/id=fe7fb8bc-57e3-4ca7-93ba-dcceb600f435.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=afb4c70b-6dff-4041-8e38-ede74b0daa54.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/080f8e5cb3ae424989242b0efe5205e6/id=5d0b42ca-d04b-46c4-ac50-94b53330265b.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/acebd7b6419a44a388b9d1620614b29f/id=8dec4234-80a5-475a-b323-2c9d4df0f540.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=a7917ece-6ddb-4391-ac66-d17bc944bf32.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/735c507fdc844be3b1528dd33f7dfb2a/id=3b292207-60d9-4a91-81d5-39f019907765.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/080f8e5cb3ae424989242b0efe5205e6/id=068bccb4-6d21-4343-aa75-ff0cd0d4d109.wav"
+"https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=94e4f16c-3035-4000-8fd2-984f8beba1d4.wav"
+          )
+          for i in "${!urls[@]}"; do
+            n=$(printf "%02d" $((i+1)))
+            curl -L --fail --retry 3 --retry-delay 2 "${urls[$i]}" -o "/tmp/$n.wav"
+            ffmpeg -hide_banner -loglevel error -y -i "/tmp/$n.wav" -c:a libopus -b:a 24k -ac 1 "/tmp/$n.ogg"
+            base64 -w 0 "/tmp/$n.ogg" > "tmp/biaochang-ep1/voice-b64/$n.ogg.b64"
+          done
+          printf '%s\n' "Generated from HeyGen speech URLs for temporary episode assembly." > tmp/biaochang-ep1/voice-b64/README.txt
+      - name: Commit encoded clips
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tmp/biaochang-ep1/voice-b64
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Relay episode 1 voice clips [skip ci]"
+          git push origin HEAD:chatgpt-temp-biaochang-ep1-voice
