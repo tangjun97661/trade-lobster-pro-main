@@ -1,4 +1,4 @@
-name: Relay Biaochang EP1 Voice
+name: Build Biaochang EP1 Natural Voice
 on:
   push:
     branches:
@@ -6,50 +6,96 @@ on:
     paths:
       - ".github/workflows/relay-biaochang-ep1-voice.yml"
 permissions:
-  contents: write
+  contents: read
 jobs:
-  relay:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install speech and audio tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install edge-tts
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Generate natural Mandarin dialogue
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/raw out/fit
+          python -m edge_tts --voice zh-CN-XiaoyiNeural --rate=-2% --pitch=+0Hz --text "沈老师，有人托我转句话。评标时，对某公司……多关注一下。" --write-media out/raw/01.mp3
+          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-5% --pitch=-3Hz --text "公司名都说了。这个‘公平’……方向感挺强。" --write-media out/raw/02.mp3
+          python -m edge_tts --voice zh-CN-XiaoyiNeural --rate=-1% --pitch=+0Hz --text "您不收礼、不答应，也不能继续评？" --write-media out/raw/03.mp3
+          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-4% --pitch=-3Hz --text "问题不在收没收。评标前有人指定关注对象，先留证，马上报告。" --write-media out/raw/04.mp3
+          python -m edge_tts --voice zh-CN-YunyangNeural --rate=-5% --pitch=-4Hz --text "对。是否回避或更换，由组织方依规研判。" --write-media out/raw/05.mp3
+          python -m edge_tts --voice zh-CN-YunyangNeural --rate=-4% --pitch=-4Hz --text "不能靠一句‘我没受影响’，替代程序。" --write-media out/raw/06.mp3
+          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-5% --pitch=-3Hz --text "我报告情况，请组织方决定。" --write-media out/raw/07.mp3
+          python -m edge_tts --voice zh-CN-XiaoxiaoNeural --rate=+1% --pitch=+0Hz --text "情况已登记。经研判，更换专家，替补抽取完成。" --write-media out/raw/08.mp3
+          python -m edge_tts --voice zh-CN-XiaoyiNeural --rate=-1% --pitch=+0Hz --text "一条消息，少评一个项目？" --write-media out/raw/09.mp3
+          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-5% --pitch=-3Hz --text "不是少评一个项目。" --write-media out/raw/10.mp3
+          python -m edge_tts --voice zh-CN-YunyangNeural --rate=-4% --pitch=-4Hz --text "是少欠一个人情。人情上的便宜，最后都得还。" --write-media out/raw/11.mp3
+          python -m edge_tts --voice zh-CN-XiaoxiaoNeural --rate=+1% --pitch=+0Hz --text "评标室准备好了，手机请存放。" --write-media out/raw/12.mp3
+          python -m edge_tts --voice zh-CN-YunjianNeural --rate=-5% --pitch=-3Hz --text "正好。人情留外面，规则带进去。" --write-media out/raw/13.mp3
+
+          python - <<'PY'
+          import subprocess, json, math
+          from pathlib import Path
+
+          starts = [2.50,8.30,13.80,17.80,24.80,29.80,34.00,37.20,43.50,46.50,49.00,53.50,56.50]
+          ends   = [8.15,13.65,17.65,24.65,29.65,33.85,37.05,43.35,46.35,48.85,53.35,56.35,59.00]
+
+          def duration(p):
+              x=subprocess.check_output([
+                  "ffprobe","-v","error","-show_entries","format=duration",
+                  "-of","default=nw=1:nk=1",str(p)
+              ], text=True).strip()
+              return float(x)
+
+          for i,(s,e) in enumerate(zip(starts,ends),1):
+              src=Path(f"out/raw/{i:02d}.mp3")
+              dst=Path(f"out/fit/{i:02d}.wav")
+              d=duration(src)
+              target=e-s
+              # Only accelerate when necessary. Preserve natural phrasing whenever it already fits.
+              filters=["aresample=48000"]
+              if d > target:
+                  factor=d/target
+                  # atempo accepts 0.5..2.0, factor here is expected to be mild.
+                  filters.insert(0,f"atempo={factor:.6f}")
+              filters += ["highpass=f=70","lowpass=f=14500","loudnorm=I=-18:LRA=7:TP=-2"]
+              subprocess.run([
+                  "ffmpeg","-y","-hide_banner","-loglevel","error","-i",str(src),
+                  "-af",",".join(filters),"-ac","1",str(dst)
+              ],check=True)
+
+          # Build 62-second timeline. Each utterance is delayed to its scene cue.
+          cmd=["ffmpeg","-y","-hide_banner","-loglevel","error"]
+          for i in range(1,14):
+              cmd += ["-i",f"out/fit/{i:02d}.wav"]
+          fc=[]
+          labels=[]
+          for idx,s in enumerate(starts):
+              ms=round(s*1000)
+              fc.append(f"[{idx}:a]adelay={ms}|{ms}[a{idx}]")
+              labels.append(f"[a{idx}]")
+          fc.append("".join(labels)+f"amix=inputs=13:duration=longest:dropout_transition=0,acompressor=threshold=-20dB:ratio=2.5:attack=10:release=120,alimiter=limit=0.93,apad=pad_dur=62,atrim=0:62[dialogue]")
+          cmd += ["-filter_complex",";".join(fc),"-map","[dialogue]","-c:a","pcm_s16le","out/dialogue.wav"]
+          subprocess.run(cmd,check=True)
+
+          # Add extremely subtle room tone, so cuts do not sound digitally dead.
+          subprocess.run([
+              "ffmpeg","-y","-hide_banner","-loglevel","error",
+              "-f","lavfi","-i","anoisesrc=color=pink:amplitude=0.0025:d=62:r=48000",
+              "-i","out/dialogue.wav",
+              "-filter_complex","[0:a]lowpass=f=9000,volume=0.20[room];[1:a]volume=1.0[vox];[room][vox]amix=inputs=2:duration=longest:normalize=0,loudnorm=I=-16:LRA=8:TP=-1.5[a]",
+              "-map","[a]","-c:a","aac","-b:a","160k","out/dialogue_mix.m4a"
+          ],check=True)
+          PY
+      - name: Upload natural voice track
+        uses: actions/upload-artifact@v4
         with:
-          ref: chatgpt-temp-biaochang-ep1-voice
-      - name: Download and encode voice clips
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p tmp/biaochang-ep1/voice-b64
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/acebd7b6419a44a388b9d1620614b29f/id=7ba1bcd6-05e2-4590-a3db-96154bcaa276.wav" -o /tmp/01.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=0dbeebc2-e0e5-4a50-95c9-06c205d7948d.wav" -o /tmp/02.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/acebd7b6419a44a388b9d1620614b29f/id=d3ee3884-eaef-4ae7-a8c2-b425055ed6fb.wav" -o /tmp/03.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=03ef5e1d-0ac5-4b12-b3fc-738cb3500fe3.wav" -o /tmp/04.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/735c507fdc844be3b1528dd33f7dfb2a/id=5933fe6a-8faf-4c50-8b95-90738d8868e5.wav" -o /tmp/05.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/735c507fdc844be3b1528dd33f7dfb2a/id=fe7fb8bc-57e3-4ca7-93ba-dcceb600f435.wav" -o /tmp/06.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=afb4c70b-6dff-4041-8e38-ede74b0daa54.wav" -o /tmp/07.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/080f8e5cb3ae424989242b0efe5205e6/id=5d0b42ca-d04b-46c4-ac50-94b53330265b.wav" -o /tmp/08.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/acebd7b6419a44a388b9d1620614b29f/id=8dec4234-80a5-475a-b323-2c9d4df0f540.wav" -o /tmp/09.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=a7917ece-6ddb-4391-ac66-d17bc944bf32.wav" -o /tmp/10.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/735c507fdc844be3b1528dd33f7dfb2a/id=3b292207-60d9-4a91-81d5-39f019907765.wav" -o /tmp/11.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/080f8e5cb3ae424989242b0efe5205e6/id=068bccb4-6d21-4343-aa75-ff0cd0d4d109.wav" -o /tmp/12.wav
-          curl -L --fail --retry 3 "https://resource2.heygen.ai/text_to_speech/1b09bfdfba58477cbf3858ef1e2ab4cb/5700258d53664cecb4b21a8154856355/id=94e4f16c-3035-4000-8fd2-984f8beba1d4.wav" -o /tmp/13.wav
-          for n in $(seq -w 1 13); do
-            base64 -w 0 "/tmp/$n.wav" > "tmp/biaochang-ep1/voice-b64/$n.wav.b64"
-          done
-          printf '%s\n' "Generated from HeyGen speech URLs for temporary episode assembly." > tmp/biaochang-ep1/voice-b64/README.txt
-      - name: Commit encoded clips
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f tmp/biaochang-ep1/voice-b64
-          if git diff --cached --quiet; then
-            echo "No changes"
-            exit 0
-          fi
-          git commit -m "Relay episode 1 voice clips [skip ci]"
-          git push origin HEAD:chatgpt-temp-biaochang-ep1-voice
-
-# retrigger 2
-
-# force-add ignored tmp files
+          name: biaochang-ep1-natural-voice
+          path: |
+            out/dialogue_mix.m4a
+            out/dialogue.wav
+          retention-days: 1
